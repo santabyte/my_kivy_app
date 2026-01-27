@@ -1,0 +1,98 @@
+name: Build Kivy APK with Buildozer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+    - name: 🚚 Checkout code
+      uses: actions/checkout@v3
+      
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: 🔧 Install Buildozer dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pip \
+          git \
+          zip \
+          unzip \
+          openjdk-11-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
+          
+    - name: 📦 Install Python packages
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython==0.29.33
+        
+    - name: 📁 Create main.py if not exists
+      run: |
+        if [ ! -f "main.py" ]; then
+          echo 'from kivy.app import App
+from kivy.uix.button import Button
+
+class SimpleApp(App):
+    def build(self):
+        return Button(text="Hello Kivy!", font_size=50)
+
+if __name__ == "__main__":
+    SimpleApp().run()' > main.py
+        fi
+        
+    - name: ⚙️ Create buildozer.spec if not exists
+      run: |
+        if [ ! -f "buildozer.spec" ]; then
+          echo '[app]
+title = My Kivy App
+package.name = myapp
+package.domain = org.test
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
+version = 1.0
+requirements = python3,kivy==2.1.0
+orientation = portrait
+fullscreen = 0
+
+[buildozer]
+log_level = 2' > buildozer.spec
+        fi
+        
+    - name: 🏗️ Initialize Buildozer
+      run: |
+        buildozer init || echo "Buildozer already initialized"
+        
+    - name: 🔨 Build APK (This will take 20-30 minutes)
+      run: |
+        buildozer -v android debug 2>&1 | tee build.log
+        
+    - name: 📱 Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: android-app
+        path: bin/*.apk
+        
+    - name: 📝 Upload build log
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-log
+        path: build.log
