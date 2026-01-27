@@ -1,0 +1,124 @@
+name: Build Kivy APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pip \
+          git \
+          autoconf \
+          automake \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev \
+          unzip \
+          zip \
+          openjdk-11-jdk-headless
+        
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython==0.29.33
+        
+    - name: Create main.py
+      run: |
+        cat > main.py << 'EOF'
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+
+class MyApp(App):
+    def build(self):
+        layout = BoxLayout(orientation='vertical', padding=30, spacing=20)
+        
+        label = Label(
+            text='برنامه اندروید من\nساخته شده در GitHub',
+            font_size='40sp',
+            halign='center'
+        )
+        
+        btn = Button(
+            text='کلیک کن',
+            size_hint=(0.7, 0.4),
+            pos_hint={'center_x': 0.5},
+            font_size='35sp',
+            background_color=(0.1, 0.5, 0.9, 1),
+            color=(1, 1, 1, 1)
+        )
+        
+        def on_press(instance):
+            instance.text = 'آفرین! 😊'
+            instance.background_color = (0, 0.8, 0.3, 1)
+        
+        btn.bind(on_press=on_press)
+        
+        layout.add_widget(label)
+        layout.add_widget(btn)
+        
+        return layout
+
+if __name__ == '__main__':
+    MyApp().run()
+EOF
+        
+    - name: Create buildozer.spec
+      run: |
+        cat > buildozer.spec << 'EOF'
+[app]
+title = برنامه من
+package.name = myapp
+package.domain = org.test
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
+version = 1.0
+requirements = python3,kivy==2.1.0
+orientation = portrait
+fullscreen = 0
+
+[buildozer]
+log_level = 2
+warn_on_root = 0
+EOF
+        
+    - name: Build APK
+      timeout-minutes: 30
+      run: |
+        buildozer android debug 2>&1 | tee build.log
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: android-app
+        path: bin/*.apk
+        
+    - name: Upload build log
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-log
+        path: build.log
