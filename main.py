@@ -1,9 +1,21 @@
 from kivy.app import App
 from kivy.uix.button import Button
+from kivy.uix.boxlayout import BoxLayout
 
-class SimpleApp(App):
+class MyApp(App):
     def build(self):
-        return Button(text='ساخته شده با GitHub!', font_size=50)
+        layout = BoxLayout()
+        btn = Button(text="Press me!")
+        
+        def on_press(instance):
+            if instance.text == "Press me!":
+                instance.text = "Hello APK!"
+            else:
+                instance.text = "Press me!"
+        
+        btn.bind(on_press=on_press)
+        layout.add_widget(btn)
+        return layout
 
-if __name__ == '__main__':
-    SimpleApp().run()
+if __name__ == "__main__":
+    MyApp().run()
