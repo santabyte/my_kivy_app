@@ -1,9 +1,13 @@
 [app]
-title = برنامه من
-package.name = myapp
-package.domain = com.example
+title = SimpleKivyApp
+package.name = simplekivyapp
+package.domain = org.santabyte
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-version = 1.0
-requirements = python3,kivy==2.1.0
+version = 0.1
+requirements = python3,kivy==2.3.1
 orientation = portrait
+android.api = 34
+android.ndk = 25b
+android.arch = arm64-v8a
+android.package = org.santabyte.simplekivyapp
